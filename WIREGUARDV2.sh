@@ -13,10 +13,10 @@ SERVER_PRIVATE_KEY=$(wg genkey)
 SERVER_PUBLIC_KEY=$(echo $SERVER_PRIVATE_KEY | wg pubkey)
 CLIENT_PRIVATE_KEY=$(wg genkey)
 CLIENT_PUBLIC_KEY=$(echo $CLIENT_PRIVATE_KEY | wg pubkey)
-SERVER_IP="192.168.100.48"
-CLIENT_IP="192.168.100.1"
+SERVER_IP="192.168.1.10"
+CLIENT_IP="192.168.2.10"
 PORT="51820"
-EXTERNAL_INTERFACE="ens18"
+EXTERNAL_INTERFACE="ens192"
 # Remplacer par le nom de votre interface réseau externe
 
 # Mettre à jour et installer WireGuard
