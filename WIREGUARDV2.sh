@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Mettre à jour et installer WireGuard
+if ! apt update && apt install -y wireguard; then
+    echo "Erreur : échec de l'installation de WireGuard."
+    exit 1
+fi
+
 # Vérifier que les commandes nécessaires sont disponibles
 for cmd in wg curl apt systemctl iptables; do
     if ! command -v $cmd &> /dev/null; then
@@ -18,12 +24,6 @@ CLIENT_IP="192.168.2.10"
 PORT="51820"
 EXTERNAL_INTERFACE="ens192"
 # Remplacer par le nom de votre interface réseau externe
-
-# Mettre à jour et installer WireGuard
-if ! apt update && apt install -y wireguard; then
-    echo "Erreur : échec de l'installation de WireGuard."
-    exit 1
-fi
 
 # Configurer le serveur WireGuard
 cat <<EOF > /etc/wireguard/wg0.conf
@@ -44,10 +44,6 @@ if ! echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf || ! sysctl -p; then
 fi
 
 # Configurer les règles de pare-feu
-iptables -A FORWARD -i wg0 -j ACCEPT
-iptables -A FORWARD -o wg0 -j ACCEPT
-# Configurer les règles de pare-feu
-EXTERNAL_INTERFACE="eth0"
 iptables -A FORWARD -i wg0 -j ACCEPT
 iptables -A FORWARD -o wg0 -j ACCEPT
 iptables -t nat -A POSTROUTING -o $EXTERNAL_INTERFACE -j MASQUERADE
