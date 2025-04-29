@@ -44,9 +44,23 @@ if ! echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf || ! sysctl -p; then
 fi
 
 # Configurer les règles de pare-feu
+# Autoriser le trafic WireGuard (UDP sur le port 51820)
+iptables -A INPUT -i $EXTERNAL_INTERFACE -p udp --dport $PORT -j ACCEPT
+
+# Autoriser les connexions établies et liées
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Autoriser le trafic entre WireGuard et l'interface externe
 iptables -A FORWARD -i wg0 -o $EXTERNAL_INTERFACE -j ACCEPT
 iptables -A FORWARD -i $EXTERNAL_INTERFACE -o wg0 -j ACCEPT
+
+# Autoriser le trafic interne sur WireGuard
 iptables -A FORWARD -i wg0 -o wg0 -j ACCEPT
+
+# Autoriser tout le trafic sortant
+iptables -A OUTPUT -o $EXTERNAL_INTERFACE -j ACCEPT
+
+# Configurer le NAT pour le client WireGuard et le réseau LAN
 iptables -t nat -A POSTROUTING -s $CLIENT_IP -o $EXTERNAL_INTERFACE -j MASQUERADE
 iptables -t nat -A POSTROUTING -s $LAN_NETWORK -o $EXTERNAL_INTERFACE -j MASQUERADE
 
