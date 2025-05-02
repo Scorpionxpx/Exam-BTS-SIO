@@ -41,11 +41,13 @@ SaveConfig = true
 PostUp = iptables -A FORWARD -i %i -j ACCEPT; \
          iptables -A FORWARD -o %i -j ACCEPT; \
          iptables -t nat -A POSTROUTING -s $VPN_SUBNET -o $EXTERNAL_INTERFACE -j MASQUERADE; \
+         iptables -t nat -A POSTROUTING -s 10.0.0.0/24 -d 192.168.2.0/24 -o ens192 -j MASQUERADE; \
          iptables -A INPUT -i %i -j ACCEPT
 
 PostDown = iptables -D FORWARD -i %i -j ACCEPT; \
            iptables -D FORWARD -o %i -j ACCEPT; \
            iptables -t nat -D POSTROUTING -s $VPN_SUBNET -o $EXTERNAL_INTERFACE -j MASQUERADE; \
+           iptables -t nat -D POSTROUTING -s 10.0.0.0/24 -d 192.168.2.0/24 -o ens192 -j MASQUERADE; \
            iptables -D INPUT -i %i -j ACCEPT
 
 [Peer]
