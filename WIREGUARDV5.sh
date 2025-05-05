@@ -2,14 +2,14 @@
 
 # Mise à jour et installation
 apt update && apt install -y wireguard iptables curl || {
-    echo "❌ Erreur : échec de l'installation de WireGuard ou iptables."
+    echo " Erreur : échec de l'installation de WireGuard ou iptables."
     exit 1
 }
 
 # Vérification des commandes nécessaires
 for cmd in wg curl iptables systemctl; do
     command -v $cmd >/dev/null || {
-        echo "❌ Erreur : commande $cmd non trouvée."
+        echo " Erreur : commande $cmd non trouvée."
         exit 1
     }
 done
@@ -87,15 +87,15 @@ EOF
 chmod 600 /etc/wireguard/client.conf
 
 # Affichage du fichier client
-echo "✅ Configuration du serveur WireGuard terminée."
-echo "📄 Fichier de configuration du client : /etc/wireguard/client.conf"
+echo " Configuration du serveur WireGuard terminée."
+echo " Fichier de configuration du client : /etc/wireguard/client.conf"
 cat /etc/wireguard/client.conf
 
 # Vérification finale
-echo "🔎 Vérification du tunnel WireGuard..."
+echo " Vérification du tunnel WireGuard..."
 wg show wg0 || {
-    echo "❌ Erreur : wg0 non actif."
+    echo " Erreur : wg0 non actif."
     exit 1
 }
 
-echo "✅ Tout est prêt. Le client peut utiliser /etc/wireguard/client.conf pour se connecter."
+echo " Tout est prêt. Le client peut utiliser /etc/wireguard/client.conf pour se connecter."
