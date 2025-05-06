@@ -4,8 +4,8 @@ Ce dépôt contient des scripts Bash permettant d'installer et de configurer un 
 
 ## 📁 Contenu du dépôt
 
-- `WIREGUARDV2.sh` : Script principal pour l'installation et la configuration automatique de WireGuard.
-- `WIREGUARDV3.sh`, `WIREGUARDV4.sh`, `WIREGUARDV5.sh` : Versions alternatives ou expérimentales du script principal.
+- `WIREGUARDV5.sh` : Script principal pour l'installation et la configuration automatique de WireGuard.
+- `WIREGUARDV2.sh`, `WIREGUARDV3.sh`, `WIREGUARDV4.sh` : Versions alternatives ou expérimentales du script principal.
 - `Wireguard.sh` : Ancienne version du script, actuellement non fonctionnelle.
 - `.vscode/` : Dossier contenant les configurations spécifiques à Visual Studio Code :
   - `extensions.json` : Liste des extensions recommandées.
