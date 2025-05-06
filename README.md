@@ -1,33 +1,30 @@
-Bienvenue dans le dépôt Exam-BTS-SIO. Ce dépôt contient des scripts et des configurations pour l'examen BTS SIO.
+# WireGuard – Scripts de configuration pour l'examen BTS SIO
 
-## 📂 Contenu du dépôt
+Ce dépôt contient des scripts Bash permettant d'installer et de configurer un serveur VPN WireGuard sur un système Linux. Il a été réalisé dans le cadre d'un examen du BTS SIO.
 
-- `LICENSE`: Contient la licence MIT pour ce projet.
-- `.vscode/`: Contient les configurations pour Visual Studio Code.
-    - `extensions`: Liste des extensions recommandées.
-    - `launch.json`: Configuration pour le débogage.
-    - `tasks.json`: Configuration des tâches.
-    - `settings.json`: Paramètres spécifiques à l'espace de travail.
-- `WIREGUARDV2.sh`: Script pour configurer un serveur WireGuard (script actuel).
-- `Wireguard.sh`: Script alternatif pour configurer un serveur WireGuard (ne fonctionne pas).
+## 📁 Contenu du dépôt
 
-## 🛠️ Installation
+- `WIREGUARDV2.sh` : Script principal pour l'installation et la configuration automatique de WireGuard.
+- `WIREGUARDV3.sh`, `WIREGUARDV4.sh`, `WIREGUARDV5.sh` : Versions alternatives ou expérimentales du script principal.
+- `Wireguard.sh` : Ancienne version du script, actuellement non fonctionnelle.
+- `.vscode/` : Dossier contenant les configurations spécifiques à Visual Studio Code :
+  - `extensions.json` : Liste des extensions recommandées.
+  - `launch.json` : Configuration pour le débogage.
+  - `settings.json` : Paramètres spécifiques à l'espace de travail.
+  - `tasks.json` : Définition des tâches automatisées.
+- `LICENSE` : Fichier de licence du projet (MIT).
 
-Pour installer et configurer WireGuard, exécutez le script `WIREGUARDV2.sh` en utilisant la commande suivante :
+## ⚙️ Prérequis
 
-```sh
+Avant d'exécuter le script, assurez-vous que votre système dispose des éléments suivants :
+
+- Un système d'exploitation Linux (Ubuntu, Debian, CentOS, etc.).
+- Les droits administrateur (sudo).
+- Une connexion Internet active.
+
+## 🚀 Installation
+
+Pour installer et configurer WireGuard à l'aide du script principal :
+
+```bash
 sudo bash WIREGUARDV2.sh
-```
-
-## 📜 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 👥 Auteurs
-
-- Scorpionxpx
-
-## 🙏 Remerciements
-
-Merci à tous ceux qui ont contribué à ce projet.
-
