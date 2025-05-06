@@ -27,4 +27,4 @@ Avant d'exécuter le script, assurez-vous que votre système dispose des éléme
 Pour installer et configurer WireGuard à l'aide du script principal :
 
 ```bash
-sudo bash WIREGUARDV2.sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Scorpionxpx/Exam-BTS-SIO/main/WIREGUARDV5.sh)"
