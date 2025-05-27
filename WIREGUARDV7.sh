@@ -34,8 +34,8 @@ MOUNT_POINT="/mnt/wgconf"
 mkdir -p "$MOUNT_POINT" || error_exit "Impossible de créer le dossier de montage."
 mount -t cifs //192.168.1.1/wgconf "$MOUNT_POINT" -o username=wireguard,password='P@ssw0rd1234*',vers=3.0 || error_exit "Impossible de monter le partage réseau."
 
-# Configuration WireGuard du serveur
-cat <<EOF > "$MOUNT_POINT/wg0.conf" || error_exit "Impossible d'écrire wg0.conf."
+# Configuration WireGuard du serveur (stockée localement sur le serveur)
+cat <<EOF > /etc/wireguard/wg0.conf || error_exit "Impossible d'écrire wg0.conf."
 [Interface]
 PrivateKey = $SERVER_PRIVATE_KEY
 Address = $SERVER_IP/24
@@ -59,10 +59,10 @@ PublicKey = $CLIENT_PUBLIC_KEY
 AllowedIPs = $CLIENT_IP/32, $LAN_NETWORK
 EOF
 
-chmod 600 "$MOUNT_POINT/wg0.conf" || error_exit "Impossible de sécuriser wg0.conf."
+chmod 600 /etc/wireguard/wg0.conf || error_exit "Impossible de sécuriser wg0.conf."
 
-# Génération du fichier client WireGuard
-cat <<EOF > "$MOUNT_POINT/client.conf" || error_exit "Impossible d'écrire client.conf."
+# Génération du fichier client WireGuard (stocké localement sur le serveur)
+cat <<EOF > /etc/wireguard/client.conf || error_exit "Impossible d'écrire client.conf."
 [Interface]
 PrivateKey = $CLIENT_PRIVATE_KEY
 Address = $CLIENT_IP/24
@@ -75,11 +75,10 @@ AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 EOF
 
-chmod 600 "$MOUNT_POINT/client.conf" || error_exit "Impossible de sécuriser client.conf."
+chmod 600 /etc/wireguard/client.conf || error_exit "Impossible de sécuriser client.conf."
 
-# Copie des fichiers de configuration pour usage local
-cp "$MOUNT_POINT/wg0.conf" /etc/wireguard/wg0.conf || error_exit "Impossible de copier wg0.conf localement."
-cp "$MOUNT_POINT/client.conf" /etc/wireguard/client.conf || error_exit "Impossible de copier client.conf localement."
+# Copie du fichier client.conf sur le partage réseau
+cp /etc/wireguard/client.conf "$MOUNT_POINT/client.conf" || error_exit "Impossible de copier client.conf sur le partage réseau."
 
 # Activer le routage IP
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf || error_exit "Impossible d'écrire la configuration sysctl."
@@ -96,8 +95,8 @@ systemctl start wg-quick@wg0 || error_exit "Impossible de démarrer wg-quick@wg0
 
 # Affichage du fichier client
 echo "Configuration du serveur WireGuard terminée."
-echo "Fichier de configuration du client : $MOUNT_POINT/client.conf"
-cat "$MOUNT_POINT/client.conf" || error_exit "Impossible d'afficher client.conf."
+echo "Fichier de configuration du client copié sur le partage réseau : $MOUNT_POINT/client.conf"
+cat /etc/wireguard/client.conf || error_exit "Impossible d'afficher client.conf."
 
 # Vérification finale
 echo "Vérification du tunnel WireGuard..."
