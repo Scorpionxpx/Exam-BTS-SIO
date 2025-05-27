@@ -7,7 +7,7 @@ error_exit() {
 }
 
 # Mise à jour et installation
-apt update && ap install -y wireguard iptables curl || error_exit "Échec de l'installation de WireGuard ou iptables."
+apt update && apt install -y wireguard iptables curl || error_exit "Échec de l'installation de WireGuard ou iptables."
 
 # Vérification des commandes nécessaires
 for cmd in wg curl iptables systemctl; do
@@ -27,7 +27,7 @@ LAN_NETWORK="192.168.2.0/24"
 PORT="51820"
 EXTERNAL_INTERFACE=$(ip route get 1.1.1.1 | awk '{print $5; exit}') || error_exit "Impossible de détecter l'interface réseau externe."
 DNS_SERVER="192.168.1.1"
-PUBLIC_IP=$(curl -s ifconfig.me) || error_exit "Impossible de récupérer l'adresse IP publique."
+PUBLIC_IP=$(-s ifconfig.me) || error_exit "Impossible de récupérer l'adresse IP publique."
 
 # Configuration WireGuard du serveur
 mkdir -p /etc/wireguard || error_exit "Impossible de créer /etc/wireguard."
