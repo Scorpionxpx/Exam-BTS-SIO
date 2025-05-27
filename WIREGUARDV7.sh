@@ -7,10 +7,10 @@ error_exit() {
 }
 
 # Mise à jour et installation
-apt update && apt install -y wireguard iptables curl || error_exit "Échec de l'installation de WireGuard ou iptables."
+apt update && apt install -y wireguard iptables curl cifs-utils || error_exit "Échec de l'installation de WireGuard, iptables, curl ou cifs-utils."
 
 # Vérification des commandes nécessaires
-for cmd in wg curl iptables systemctl; do
+for cmd in wg curl iptables systemctl mount umount; do
     command -v $cmd >/dev/null || error_exit "Commande $cmd non trouvée."
 done
 
@@ -29,9 +29,13 @@ EXTERNAL_INTERFACE=$(ip route get 1.1.1.1 | awk '{print $5; exit}') || error_exi
 DNS_SERVER="192.168.1.1"
 PUBLIC_IP=$(curl -s ifconfig.me) || error_exit "Impossible de récupérer l'adresse IP publique."
 
+# Montage du partage réseau
+MOUNT_POINT="/mnt/wgconf"
+mkdir -p "$MOUNT_POINT" || error_exit "Impossible de créer le dossier de montage."
+mount -t cifs //192.168.1.1/wgconf "$MOUNT_POINT" -o username=wireguard,password='P@ssw0rd1234*',vers=3.0 || error_exit "Impossible de monter le partage réseau."
+
 # Configuration WireGuard du serveur
-mkdir -p /etc/wireguard || error_exit "Impossible de créer /etc/wireguard."
-cat <<EOF > /etc/wireguard/wg0.conf || error_exit "Impossible d'écrire wg0.conf."
+cat <<EOF > "$MOUNT_POINT/wg0.conf" || error_exit "Impossible d'écrire wg0.conf."
 [Interface]
 PrivateKey = $SERVER_PRIVATE_KEY
 Address = $SERVER_IP/24
@@ -55,7 +59,27 @@ PublicKey = $CLIENT_PUBLIC_KEY
 AllowedIPs = $CLIENT_IP/32, $LAN_NETWORK
 EOF
 
-chmod 600 /etc/wireguard/wg0.conf || error_exit "Impossible de sécuriser wg0.conf."
+chmod 600 "$MOUNT_POINT/wg0.conf" || error_exit "Impossible de sécuriser wg0.conf."
+
+# Génération du fichier client WireGuard
+cat <<EOF > "$MOUNT_POINT/client.conf" || error_exit "Impossible d'écrire client.conf."
+[Interface]
+PrivateKey = $CLIENT_PRIVATE_KEY
+Address = $CLIENT_IP/24
+DNS = $DNS_SERVER
+
+[Peer]
+PublicKey = $SERVER_PUBLIC_KEY
+Endpoint = $PUBLIC_IP:$PORT
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25
+EOF
+
+chmod 600 "$MOUNT_POINT/client.conf" || error_exit "Impossible de sécuriser client.conf."
+
+# Copie des fichiers de configuration pour usage local
+cp "$MOUNT_POINT/wg0.conf" /etc/wireguard/wg0.conf || error_exit "Impossible de copier wg0.conf localement."
+cp "$MOUNT_POINT/client.conf" /etc/wireguard/client.conf || error_exit "Impossible de copier client.conf localement."
 
 # Activer le routage IP
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf || error_exit "Impossible d'écrire la configuration sysctl."
@@ -70,29 +94,16 @@ iptables -A OUTPUT -o $EXTERNAL_INTERFACE -j ACCEPT || error_exit "Impossible d'
 systemctl enable wg-quick@wg0 || error_exit "Impossible d'activer wg-quick@wg0."
 systemctl start wg-quick@wg0 || error_exit "Impossible de démarrer wg-quick@wg0."
 
-# Génération du fichier client WireGuard
-cat <<EOF > /etc/wireguard/client.conf || error_exit "Impossible d'écrire client.conf."
-[Interface]
-PrivateKey = $CLIENT_PRIVATE_KEY
-Address = $CLIENT_IP/24
-DNS = $DNS_SERVER
-
-[Peer]
-PublicKey = $SERVER_PUBLIC_KEY
-Endpoint = $PUBLIC_IP:$PORT
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
-EOF
-
-chmod 600 /etc/wireguard/client.conf || error_exit "Impossible de sécuriser client.conf."
-
 # Affichage du fichier client
 echo "Configuration du serveur WireGuard terminée."
-echo "Fichier de configuration du client : /etc/wireguard/client.conf"
-cat /etc/wireguard/client.conf || error_exit "Impossible d'afficher client.conf."
+echo "Fichier de configuration du client : $MOUNT_POINT/client.conf"
+cat "$MOUNT_POINT/client.conf" || error_exit "Impossible d'afficher client.conf."
 
 # Vérification finale
 echo "Vérification du tunnel WireGuard..."
 wg show wg0 || error_exit "wg0 non actif."
 
-echo "Tout est prêt. Le client peut utiliser /etc/wireguard/client.conf pour se connecter."
+# Démontage du partage réseau
+umount "$MOUNT_POINT" || error_exit "Impossible de démonter le partage réseau."
+
+echo "Tout est prêt. Le client peut utiliser $MOUNT_POINT/client.conf pour se connecter (fichier aussi disponible sur le partage réseau)."
