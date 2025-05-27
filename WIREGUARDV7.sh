@@ -34,7 +34,7 @@ MOUNT_POINT="/mnt/wgconf"
 mkdir -p "$MOUNT_POINT" || error_exit "Impossible de créer le dossier de montage."
 mount -t cifs //192.168.1.1/wgconf "$MOUNT_POINT" -o username=wireguard,password='P@ssw0rd1234*',vers=3.0 || error_exit "Impossible de monter le partage réseau."
 
-# Configuration WireGuard du serveur (stockée uniquement sur le partage réseau)
+# Configuration WireGuard du serveur
 cat <<EOF > "$MOUNT_POINT/wg0.conf" || error_exit "Impossible d'écrire wg0.conf."
 [Interface]
 PrivateKey = $SERVER_PRIVATE_KEY
@@ -61,7 +61,7 @@ EOF
 
 chmod 600 "$MOUNT_POINT/wg0.conf" || error_exit "Impossible de sécuriser wg0.conf."
 
-# Génération du fichier client WireGuard (stocké sur le partage réseau)
+# Génération du fichier client WireGuard
 cat <<EOF > "$MOUNT_POINT/client.conf" || error_exit "Impossible d'écrire client.conf."
 [Interface]
 PrivateKey = $CLIENT_PRIVATE_KEY
@@ -77,7 +77,8 @@ EOF
 
 chmod 600 "$MOUNT_POINT/client.conf" || error_exit "Impossible de sécuriser client.conf."
 
-# Copie du fichier client.conf pour usage local uniquement
+# Copie des fichiers de configuration pour usage local
+cp "$MOUNT_POINT/wg0.conf" /etc/wireguard/wg0.conf || error_exit "Impossible de copier wg0.conf localement."
 cp "$MOUNT_POINT/client.conf" /etc/wireguard/client.conf || error_exit "Impossible de copier client.conf localement."
 
 # Activer le routage IP
