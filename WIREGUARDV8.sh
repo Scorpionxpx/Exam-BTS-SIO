@@ -17,11 +17,8 @@ done
 # Variables de configuration
 SERVER_PRIVATE_KEY=$(wg genkey) || error_exit "Impossible de générer la clé privée serveur."
 SERVER_PUBLIC_KEY=$(echo "$SERVER_PRIVATE_KEY" | wg pubkey) || error_exit "Impossible de générer la clé publique serveur."
-CLIENT_PRIVATE_KEY=$(wg genkey) || error_exit "Impossible de générer la clé privée client."
-CLIENT_PUBLIC_KEY=$(echo "$CLIENT_PRIVATE_KEY" | wg pubkey) || error_exit "Impossible de générer la clé publique client."
 
 SERVER_IP="10.0.0.1"
-CLIENT_IP="10.0.0.2"
 VPN_SUBNET="10.0.0.0/24"
 LAN_NETWORK="192.168.2.0/24"
 PORT="51820"
@@ -34,7 +31,13 @@ MOUNT_POINT="/mnt/wgconf"
 mkdir -p "$MOUNT_POINT" || error_exit "Impossible de créer le dossier de montage."
 mount -t cifs //192.168.1.1/wgconf "$MOUNT_POINT" -o username=wireguard,password='P@ssw0rd1234*',vers=3.0 || error_exit "Impossible de monter le partage réseau."
 
-# Configuration WireGuard du serveur (stockée localement sur le serveur)
+# Chemin du CSV des utilisateurs
+CSV_USERS="personnes.csv"  # À adapter selon l'emplacement réel
+
+# Vérification du fichier CSV
+[ -f "$CSV_USERS" ] || error_exit "Fichier CSV $CSV_USERS introuvable."
+
+# Création de la configuration serveur de base
 cat <<EOF > /etc/wireguard/wg0.conf || error_exit "Impossible d'écrire wg0.conf."
 [Interface]
 PrivateKey = $SERVER_PRIVATE_KEY
@@ -54,15 +57,33 @@ PostDown = iptables -D FORWARD -i %i -j ACCEPT; \
            iptables -t nat -D POSTROUTING -s 10.0.0.0/24 -d 192.168.2.0/24 -o ens192 -j MASQUERADE; \
            iptables -D INPUT -i %i -j ACCEPT
 
+EOF
+
+# Boucle sur chaque utilisateur du CSV (en ignorant l'en-tête)
+tail -n +2 "$CSV_USERS" | while IFS=',' read -r id nom prenom; do
+    USERNAME="${prenom,,}.${nom,,}"  # prénom.nom en minuscules
+    # Création de l'utilisateur s'il n'existe pas
+    if ! id "$USERNAME" &>/dev/null; then
+        useradd -m -c "$prenom $nom" "$USERNAME" || error_exit "Impossible de créer l'utilisateur $USERNAME."
+        echo "Utilisateur $USERNAME créé."
+    else
+        echo "Utilisateur $USERNAME déjà existant."
+    fi
+
+    # Génération des clés WireGuard pour l'utilisateur
+    CLIENT_PRIVATE_KEY=$(wg genkey) || error_exit "Impossible de générer la clé privée client pour $USERNAME."
+    CLIENT_PUBLIC_KEY=$(echo "$CLIENT_PRIVATE_KEY" | wg pubkey) || error_exit "Impossible de générer la clé publique client pour $USERNAME."
+    CLIENT_IP="10.0.0.$((100 + id))"  # Exemple : IP unique par id
+
+    # Ajout du peer dans la conf serveur
+    cat <<EOF >> /etc/wireguard/wg0.conf
 [Peer]
 PublicKey = $CLIENT_PUBLIC_KEY
 AllowedIPs = $CLIENT_IP/32, $LAN_NETWORK
 EOF
 
-chmod 600 /etc/wireguard/wg0.conf || error_exit "Impossible de sécuriser wg0.conf."
-
-# Génération du fichier client WireGuard (stocké localement sur le serveur)
-cat <<EOF > /etc/wireguard/client.conf || error_exit "Impossible d'écrire client.conf."
+    # Génération du fichier client WireGuard
+    cat <<EOF > "$MOUNT_POINT/client_${USERNAME}.conf"
 [Interface]
 PrivateKey = $CLIENT_PRIVATE_KEY
 Address = $CLIENT_IP/24
@@ -75,10 +96,11 @@ AllowedIPs = 0.0.0.0/0
 PersistentKeepalive = 25
 EOF
 
-chmod 600 /etc/wireguard/client.conf || error_exit "Impossible de sécuriser client.conf."
+    chmod 600 "$MOUNT_POINT/client_${USERNAME}.conf" || error_exit "Impossible de sécuriser client_${USERNAME}.conf."
+    echo "Fichier de configuration WireGuard généré pour $USERNAME : $MOUNT_POINT/client_${USERNAME}.conf"
+done
 
-# Copie du fichier client.conf sur le partage réseau
-cp /etc/wireguard/client.conf "$MOUNT_POINT/client.conf" || error_exit "Impossible de copier client.conf sur le partage réseau."
+chmod 600 /etc/wireguard/wg0.conf || error_exit "Impossible de sécuriser wg0.conf."
 
 # Activer le routage IP
 echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-wireguard.conf || error_exit "Impossible d'écrire la configuration sysctl."
@@ -93,10 +115,10 @@ iptables -A OUTPUT -o $EXTERNAL_INTERFACE -j ACCEPT || error_exit "Impossible d'
 systemctl enable wg-quick@wg0 || error_exit "Impossible d'activer wg-quick@wg0."
 systemctl start wg-quick@wg0 || error_exit "Impossible de démarrer wg-quick@wg0."
 
-# Affichage du fichier client
+# Affichage des fichiers clients générés
 echo "Configuration du serveur WireGuard terminée."
-echo "Fichier de configuration du client copié sur le partage réseau : $MOUNT_POINT/client.conf"
-cat /etc/wireguard/client.conf || error_exit "Impossible d'afficher client.conf."
+echo "Fichiers de configuration des clients copiés sur le partage réseau :"
+ls "$MOUNT_POINT"/client_*.conf
 
 # Vérification finale
 echo "Vérification du tunnel WireGuard..."
@@ -105,4 +127,4 @@ wg show wg0 || error_exit "wg0 non actif."
 # Démontage du partage réseau
 umount "$MOUNT_POINT" || error_exit "Impossible de démonter le partage réseau."
 
-echo "Tout est prêt. Le client peut utiliser $MOUNT_POINT/client.conf pour se connecter (fichier aussi disponible sur le partage réseau)."
+echo "Tout est prêt. Les clients peuvent utiliser leur fichier de configuration présent sur le partage réseau."
