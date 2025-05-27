@@ -7,7 +7,7 @@ error_exit() {
 }
 
 # Mise à jour et installation
-apt update && apt install -y wireguard iptables curl || error_exit "Échec de l'installation de WireGuard ou iptables."
+apt update && ap install -y wireguard iptables curl || error_exit "Échec de l'installation de WireGuard ou iptables."
 
 # Vérification des commandes nécessaires
 for cmd in wg curl iptables systemctl; do
